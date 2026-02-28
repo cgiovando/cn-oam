@@ -35,6 +35,7 @@ jobs:
         run: npx vite build
         env:
           VITE_CATALOG_URL: https://cn-oam.s3.amazonaws.com/catalog.parquet
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
