@@ -54,6 +54,24 @@ function ImageCard({ feature, onSelect, isSelected }) {
     return `${Number(gsd).toFixed(2)} m`;
   };
 
+  const formatArea = () => {
+    const coords = feature.geometry?.coordinates?.[0];
+    if (!coords || coords.length < 4) return 'Unknown';
+    // Approximate geodesic area using the Shoelace formula on lat/lon with cos(lat) correction
+    const toRad = d => d * Math.PI / 180;
+    const R = 6371000; // Earth radius in meters
+    let area = 0;
+    for (let i = 0; i < coords.length - 1; i++) {
+      const [lon1, lat1] = coords[i];
+      const [lon2, lat2] = coords[i + 1];
+      area += toRad(lon2 - lon1) * (2 + Math.sin(toRad(lat1)) + Math.sin(toRad(lat2)));
+    }
+    area = Math.abs(area * R * R / 2);
+    if (area >= 1e6) return `${(area / 1e6).toFixed(2)} km²`;
+    if (area >= 1e4) return `${(area / 1e4).toFixed(1)} ha`;
+    return `${Math.round(area)} m²`;
+  };
+
   const toggleDetails = (e) => { e.stopPropagation(); setIsExpanded(!isExpanded); };
   const handleDeselect = (e) => { e.stopPropagation(); onSelect(null); };
   const handleCopy = (e, text, feedbackId) => {
@@ -177,7 +195,7 @@ function ImageCard({ feature, onSelect, isSelected }) {
             <div><span className="block text-[10px] uppercase text-gray-400 font-bold">Platform</span>{formatPlatform(p.platform_type || p.platform)}</div>
             <div><span className="block text-[10px] uppercase text-gray-400 font-bold">GSD</span>{formatGsd(p.gsd)}</div>
             <div><span className="block text-[10px] uppercase text-gray-400 font-bold">Size</span>{formatFileSize(p.file_size)}</div>
-            <div><span className="block text-[10px] uppercase text-gray-400 font-bold">Dimensions</span>{p.width && p.height ? `${p.width}×${p.height}` : 'Unknown'}</div>
+            <div><span className="block text-[10px] uppercase text-gray-400 font-bold">Coverage</span>{formatArea()}</div>
             <div><span className="block text-[10px] uppercase text-gray-400 font-bold">License</span>
               <a href="https://creativecommons.org/licenses/" target="_blank" rel="noreferrer" className="hover:underline hover:text-cyan-600 truncate block" title={p.license}>{p.license}</a>
             </div>
