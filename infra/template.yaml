@@ -1,0 +1,121 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: cn-oam upload pipeline — presigned URL auth, COG processing, catalog rebuild
+
+Globals:
+  Function:
+    Timeout: 30
+    Architectures:
+      - arm64
+    Environment:
+      Variables:
+        S3_BUCKET: cn-oam
+
+Parameters:
+  UploadApiKey:
+    Type: String
+    NoEcho: true
+    Description: API key for upload authentication
+
+Resources:
+  # --- API Gateway ---
+  UploadApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,PUT,OPTIONS'"
+        AllowHeaders: "'Content-Type,x-api-key'"
+        AllowOrigin: "'*'"
+
+  # --- Upload Auth Lambda (zip, Python 3.12) ---
+  UploadAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cn-oam-upload-auth
+      CodeUri: ../functions/upload-auth/
+      Handler: handler.lambda_handler
+      Runtime: python3.12
+      MemorySize: 128
+      Timeout: 10
+      Environment:
+        Variables:
+          UPLOAD_API_KEY: !Ref UploadApiKey
+      Policies:
+        - S3CrudPolicy:
+            BucketName: cn-oam
+      Events:
+        GetPresignedUrl:
+          Type: Api
+          Properties:
+            RestApiId: !Ref UploadApi
+            Path: /upload
+            Method: GET
+
+  # --- Process Image Lambda (container) ---
+  # S3 trigger configured manually: aws s3api put-bucket-notification-configuration
+  ProcessImageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cn-oam-process-image
+      PackageType: Image
+      MemorySize: 3008
+      Timeout: 600
+      EphemeralStorage:
+        Size: 10240
+      Environment:
+        Variables:
+          S3_BUCKET: cn-oam
+      Policies:
+        - S3CrudPolicy:
+            BucketName: cn-oam
+    Metadata:
+      DockerTag: latest
+      DockerContext: ../functions/process-image
+      Dockerfile: Dockerfile
+
+  # Allow S3 to invoke process-image Lambda
+  ProcessImageS3Permission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ProcessImageFunction
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: arn:aws:s3:::cn-oam
+      SourceAccount: !Ref AWS::AccountId
+
+  # --- Rebuild Catalog Lambda (container) ---
+  RebuildCatalogFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: cn-oam-rebuild-catalog
+      PackageType: Image
+      MemorySize: 1024
+      Timeout: 300
+      Environment:
+        Variables:
+          S3_BUCKET: cn-oam
+      Policies:
+        - S3CrudPolicy:
+            BucketName: cn-oam
+      Events:
+        HourlySchedule:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 hour)
+            Enabled: true
+    Metadata:
+      DockerTag: latest
+      DockerContext: ../functions/rebuild-catalog
+      Dockerfile: Dockerfile
+
+Outputs:
+  UploadApiUrl:
+    Description: Upload API Gateway URL
+    Value: !Sub "https://${UploadApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  UploadAuthFunctionArn:
+    Value: !GetAtt UploadAuthFunction.Arn
+  ProcessImageFunctionArn:
+    Value: !GetAtt ProcessImageFunction.Arn
+  RebuildCatalogFunctionArn:
+    Value: !GetAtt RebuildCatalogFunction.Arn
