@@ -3,7 +3,7 @@ import ImageCard from './ImageCard';
 
 const ITEMS_PER_PAGE = 10;
 
-function Sidebar({ features, onSelect, selectedFeature, catalogStats, isSearching }) {
+function Sidebar({ features, onSelect, selectedFeature, catalogStats, isSearching, onUploadClick }) {
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const listRef = useRef(null);
   const prevFeatureIdsRef = useRef('');
@@ -39,19 +39,21 @@ function Sidebar({ features, onSelect, selectedFeature, catalogStats, isSearchin
   return (
     <div ref={listRef} className="flex-1 overflow-y-auto bg-gray-50 relative scroll-smooth font-sans">
       <div className="p-5 border-b border-gray-200 bg-white sticky top-0 z-20 shadow-sm">
-        {/* Logo */}
-        <div className="flex items-center gap-3 mb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              </svg>
-            </div>
-            <div>
-              <span className="font-extrabold text-base text-gray-800">OpenAerialMap</span>
-              <span className="text-[9px] ml-1 px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full font-bold uppercase">cn</span>
-            </div>
+        {/* Logo + Upload */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <img src={`${import.meta.env.BASE_URL}oam-logo.svg`} alt="OpenAerialMap" className="h-6" />
+            <span className="text-[9px] px-1.5 py-0.5 bg-cyan-100 text-cyan-700 rounded-full font-bold uppercase">cn</span>
           </div>
+          <button
+            onClick={onUploadClick}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold rounded-lg hover:from-cyan-600 hover:to-blue-700 transition-all shadow-sm"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            Upload
+          </button>
         </div>
 
         {/* Stats + Search Status */}

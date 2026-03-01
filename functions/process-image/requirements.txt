@@ -1,0 +1,7 @@
+boto3
+rasterio
+rio-cogeo
+pyarrow
+geopandas
+shapely
+Pillow

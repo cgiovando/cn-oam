@@ -6,6 +6,7 @@ import MapFilterBar from './components/MapFilterBar';
 import Toolbar from './components/Toolbar';
 import MiniMap from './components/MiniMap';
 import BurgerMenu from './components/BurgerMenu';
+import UploadModal from './components/UploadModal';
 import { initCatalog, searchCatalog, getCatalogStats } from './lib/catalog';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
   const [previewsEnabled, setPreviewsEnabled] = useState(true);
   const [hoveredFeatureId, setHoveredFeatureId] = useState(null);
   const [basemap, setBasemap] = useState('carto');
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   const [filters, setFilters] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -136,6 +138,7 @@ function App() {
           selectedFeature={selectedFeature}
           catalogStats={catalogStats}
           isSearching={isSearching}
+          onUploadClick={() => setUploadModalOpen(true)}
         />
       </div>
 
@@ -180,6 +183,15 @@ function App() {
           filters={filters}
         />
       </div>
+
+      {/* Upload Modal */}
+      <UploadModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onUploadComplete={() => {
+          if (viewportBbox) runSearch(viewportBbox, filters);
+        }}
+      />
     </div>
   );
 }
