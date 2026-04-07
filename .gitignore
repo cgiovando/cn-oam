@@ -9,3 +9,8 @@ dist-ssr
 __pycache__
 *.pyc
 .venv
+
+.timesheet-log.md
+CLAUDE.md
+PROJECT_NOTES.md
+AGENTS.md
